@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeJudge - 在线程序评测系统</title>
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1E50BC', // 主色调：深蓝色
+            secondary: '#3B82F6', // 次要蓝色
+            accent: '#F59E0B', // 强调色：橙色
+            success: '#10B981', // 成功色：绿色
+            danger: '#EF4444', // 危险色：红色
+            dark: '#1F2937', // 深色
+            light: '#F3F4F6', // 浅色
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['Consolas', 'Monaco', 'monospace'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <!-- 网站Logo -->
+        <div class="flex items-center space-x-2">
+          <div class="text-primary text-2xl">
+            <i class="fa fa-code-fork"></i>
+          </div>
+          <a href="#" class="text-xl font-bold text-primary">CodeJudge</a>
+        </div>
+        
+        <!-- 主导航 - 桌面版 -->
+        <nav class="hidden md:flex items-center space-x-8">
+          <a href="#" class="text-primary font-medium">首页</a>
+          <a href="#" class="text-gray-600 hover:text-primary transition-colors">题库</a>
+          <a href="#" class="text-gray-600 hover:text-primary transition-colors">比赛</a>
+          <a href="#" class="text-gray-600 hover:text-primary transition-colors">讨论</a>
+          <a href="#" class="text-gray-600 hover:text-primary transition-colors">资源</a>
+        </nav>
+        
+        <!-- 用户区域 -->
+        <div class="flex items-center space-x-4">
+          <button class="hidden md:block text-gray-600 hover:text-primary transition-colors">
+            <i class="fa fa-bell-o text-lg"></i>
+          </button>
+          <div class="relative group">
+            <button class="flex items-center space-x-2 focus:outline-none">
+              <img src="https://picsum.photos/id/1005/40/40" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary">
+              <span class="hidden md:inline font-medium">user12345</span>
+              <i class="fa fa-caret-down text-gray-500"></i>
+            </button>
+            <!-- 用户下拉菜单 -->
+            <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block transition-all duration-200">
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white">个人主页</a>
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white">我的提交</a>
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white">我的收藏</a>
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white">设置</a>
+              <div class="border-t border-gray-100 my-1"></div>
+              <a href="#" class="block px-4 py-2 text-sm text-danger hover:bg-danger hover:text-white">退出登录</a>
+            </div>
+          </div>
+          <!-- 移动端菜单按钮 -->
+          <button class="md:hidden text-gray-600 hover:text-primary transition-colors" id="mobile-menu-button">
+            <i class="fa fa-bars text-xl"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 移动端导航菜单 -->
+    <div class="md:hidden hidden bg-white border-t" id="mobile-menu">
+      <div class="container mx-auto px-4 py-3 space-y-2">
+        <a href="#" class="block py-2 text-primary font-medium">首页</a>
+        <a href="#" class="block py-2 text-gray-600 hover:text-primary transition-colors">题库</a>
+        <a href="#" class="block py-2 text-gray-600 hover:text-primary transition-colors">比赛</a>
+        <a href="#" class="block py-2 text-gray-600 hover:text-primary transition-colors">讨论</a>
+        <a href="#" class="block py-2 text-gray-600 hover:text-primary transition-colors">资源</a>
+        <a href="#" class="block py-2 text-gray-600 hover:text-primary transition-colors">
+          <i class="fa fa-bell-o mr-2"></i>通知
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow">
+    <!-- 英雄区域 -->
+    <section class="bg-gradient-to-r from-primary to-secondary text-white py-12 md:py-20">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row items-center">
+          <div class="md:w-1/2 mb-8 md:mb-0">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-tight text-shadow mb-4">
+              提升你的编程技能
+            </h1>
+            <p class="text-[clamp(1rem,2vw,1.25rem)] text-blue-100 mb-8 max-w-lg">
+              超过1000道编程题目，实时评测系统，助力你成为更优秀的程序员
+            </p>
+            <div class="flex flex-wrap gap-4">
+              <a href="#" class="bg-white text-primary hover:bg-gray-100 font-medium py-3 px-6 rounded-lg transition-colors shadow-lg">
+                开始刷题
+              </a>
+              <a href="#" class="bg-transparent border-2 border-white text-white hover:bg-white/10 font-medium py-3 px-6 rounded-lg transition-colors">
+                参加比赛
+              </a>
+            </div>
+          </div>
+          <div class="md:w-1/2 flex justify-center">
+            <img src="https://picsum.photos/id/0/600/400" alt="编程练习" class="rounded-lg shadow-2xl max-w-full h-auto transform rotate-1 hover:rotate-0 transition-transform duration-300">
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 统计数据 -->
+    <section class="bg-white py-8">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div class="p-4">
+            <div class="text-3xl md:text-4xl font-bold text-primary mb-2" id="problem-count">1,254</div>
+            <div class="text-gray-600">题目数量</div>
+          </div>
+          <div class="p-4">
+            <div class="text-3xl md:text-4xl font-bold text-primary mb-2" id="user-count">28,941</div>
+            <div class="text-gray-600">注册用户</div>
+          </div>
+          <div class="p-4">
+            <div class="text-3xl md:text-4xl font-bold text-primary mb-2" id="submission-count">1,456,892</div>
+            <div class="text-gray-600">代码提交</div>
+          </div>
+          <div class="p-4">
+            <div class="text-3xl md:text-4xl font-bold text-primary mb-2" id="contest-count">156</div>
+            <div class="text-gray-600">举办比赛</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 主要内容区 - 两栏布局 -->
+    <section class="py-10">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col lg:flex-row gap-8">
+          <!-- 左侧主内容 -->
+          <div class="lg:w-2/3">
+            <!-- 题目列表 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">推荐题目</h2>
+                <a href="#" class="text-primary hover:text-secondary transition-colors text-sm font-medium">
+                  查看全部 <i class="fa fa-angle-right ml-1"></i>
+                </a>
+              </div>
+              
+              <!-- 题目表格 -->
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">题号</th>
+                      <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目名称</th>
+                      <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">难度</th>
+                      <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">通过率</th>
+                      <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">提交</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-4 py-3 whitespace-nowrap font-medium text-primary">#1001</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <a href="#" class="text-gray-800 hover:text-primary transition-colors">A + B 问题</a>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">入门</span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-success">89.2%</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-gray-600">125,890</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-4 py-3 whitespace-nowrap font-medium text-primary">#1024</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <a href="#" class="text-gray-800 hover:text-primary transition-colors">字符串反转</a>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">简单</span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-success">76.5%</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-gray-600">89,452</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-4 py-3 whitespace-nowrap font-medium text-primary">#1567</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <a href="#" class="text-gray-800 hover:text-primary transition-colors">二叉树遍历</a>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">中等</span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-success">54.3%</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-gray-600">67,215</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-4 py-3 whitespace-nowrap font-medium text-primary">#2048</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <a href="#" class="text-gray-800 hover:text-primary transition-colors">动态规划求解最长公共子序列</a>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">困难</span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-success">32.1%</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-gray-600">42,567</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-4 py-3 whitespace-nowrap font-medium text-primary">#3001</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <a href="#" class="text-gray-800 hover:text-primary transition-colors">最短路径问题</a>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">挑战</span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-success">21.7%</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-gray-600">28,901</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+              <!-- 分页 -->
+              <div class="flex justify-center mt-6">
+                <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">上一页</span>
+                    <i class="fa fa-chevron-left h-5 w-5"></i>
+                  </a>
+                  <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">1</a>
+                  <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">2</a>
+                  <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">3</a>
+                  <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                  <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">12</a>
+                  <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">下一页</span>
+                    <i class="fa fa-chevron-right h-5 w-5"></i>
+                  </a>
+                </nav>
+              </div>
+            </div>
+            
+            <!-- 在线编辑器预览 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">在线编辑器</h2>
+                <span class="text-sm text-gray-500">支持 C++, Python, Java 等多种语言</span>
+              </div>
+              
+              <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <!-- 编辑器工具栏 -->
+                <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+                  <div class="flex items-center space-x-4">
+                    <select class="bg-white border border-gray-300 rounded-md text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary">
+                      <option>C++</option>
+                      <option>Python</option>
+                      <option>Java</option>
+                      <option>JavaScript</option>
+                    </select>
+                    <div class="flex space-x-1">
+                      <button class="text-gray-600 hover:text-primary transition-colors">
+                        <i class="fa fa-save"></i>
+                      </button>
+                      <button class="text-gray-600 hover:text-primary transition-colors">
+                        <i class="fa fa-copy"></i>
+                      </button>
+                      <button class="text-gray-600 hover:text-primary transition-colors">
+                        <i class="fa fa-paste"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <button class="bg-primary hover:bg-secondary text-white px-4 py-1 rounded text-sm transition-colors">
+                      提交代码
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- 编辑器内容区 -->
+                <div class="flex flex-col md:flex-row">
+                  <div class="md:w-1/2 border-b md:border-b-0 md:border-r border-gray-200">
+                    <div class="font-mono text-sm p-4 h-64 overflow-auto bg-gray-50">
+                      <pre><code>// A + B 问题
+#include &lt;iostream&gt;
+using namespace std;
+
+int main() {
+    int a, b;
+    cin &gt;&gt; a &gt;&gt; b;
+    cout &lt;&lt; a + b &lt;&lt; endl;
+    return 0;
+}</code></pre>
+                    </div>
+                  </div>
+                  <div class="md:w-1/2">
+                    <div class="p-4 h-64 overflow-auto">
+                      <div class="text-sm font-medium text-gray-700 mb-2">输入</div>
+                      <div class="bg-gray-50 p-2 rounded text-sm font-mono mb-4">3 5</div>
+                      
+                      <div class="text-sm font-medium text-gray-700 mb-2">输出</div>
+                      <div class="bg-gray-50 p-2 rounded text-sm font-mono mb-4">8</div>
+                      
+                      <div class="text-sm font-medium text-gray-700 mb-2">状态</div>
+                      <div class="text-success text-sm"><i class="fa fa-check-circle"></i> 答案正确</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 右侧边栏 -->
+          <div class="lg:w-1/3">
+            <!-- 用户信息卡片 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+              <div class="flex items-center mb-4">
+                <img src="https://picsum.photos/id/1005/80/80" alt="用户头像" class="w-16 h-16 rounded-full object-cover border-2 border-primary">
+                <div class="ml-4">
+                  <h3 class="font-bold text-lg">user12345</h3>
+                  <p class="text-gray-500 text-sm">等级：Lv.4 绿宝石</p>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-3 gap-2 text-center mb-4">
+                <div class="p-2">
+                  <div class="font-bold text-primary">128</div>
+                  <div class="text-xs text-gray-500">已解决</div>
+                </div>
+                <div class="p-2">
+                  <div class="font-bold text-primary">356</div>
+                  <div class="text-xs text-gray-500">提交数</div>
+                </div>
+                <div class="p-2">
+                  <div class="font-bold text-primary">35.9%</div>
+                  <div class="text-xs text-gray-500">正确率</div>
+                </div>
+              </div>
+              
+              <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                <div class="bg-primary h-2.5 rounded-full" style="width: 35%"></div>
+              </div>
+              
+              <div class="flex justify-between text-xs text-gray-500 mb-4">
+                <span>Lv.4 绿宝石</span>
+                <span>距离下一级：65%</span>
+              </div>
+              
+              <button class="w-full bg-primary hover:bg-secondary text-white py-2 rounded-lg transition-colors">
+                查看个人主页
+              </button>
+            </div>
+            
+            <!-- 公告栏 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">最新公告</h3>
+                <a href="#" class="text-primary text-sm hover:underline">更多</a>
+              </div>
+              
+              <div class="space-y-4">
+                <div class="border-l-4 border-primary pl-3 py-1">
+                  <a href="#" class="font-medium hover:text-primary transition-colors">2023年秋季编程大赛报名开始</a>
+                  <p class="text-gray-500 text-sm mt-1">2023-09-15</p>
+                </div>
+                <div class="border-l-4 border-gray-300 pl-3 py-1">
+                  <a href="#" class="font-medium hover:text-primary transition-colors">系统维护通知（9月20日）</a>
+                  <p class="text-gray-500 text-sm mt-1">2023-09-10</p>
+                </div>
+                <div class="border-l-4 border-gray-300 pl-3 py-1">
+                  <a href="#" class="font-medium hover:text-primary transition-colors">新增100道算法进阶题目</a>
+                  <p class="text-gray-500 text-sm mt-1">2023-09-05</p>
+                </div>
+                <div class="border-l-4 border-gray-300 pl-3 py-1">
+                  <a href="#" class="font-medium hover:text-primary transition-colors">Python 3.10 环境已上线</a>
+                  <p class="text-gray-500 text-sm mt-1">2023-08-28</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 即将开始的比赛 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">即将开始的比赛</h3>
+                <a href="#" class="text-primary text-sm hover:underline">全部比赛</a>
+              </div>
+              
+              <div class="space-y-4">
+                <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                  <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-medium">周末算法挑战赛 #24</h4>
+                    <span class="bg-accent/10 text-accent text-xs px-2 py-1 rounded-full">公开</span>
+                  </div>
+                  <div class="text-sm text-gray-500 mb-2">
+                    <i class="fa fa-calendar-o mr-1"></i> 2023-09-23 19:00
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    <i class="fa fa-clock-o mr-1"></i> 持续 3 小时
+                  </div>
+                </div>
+                
+                <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                  <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-medium">新手入门选拔赛</h4>
+                    <span class="bg-success/10 text-success text-xs px-2 py-1 rounded-full">入门</span>
+                  </div>
+                  <div class="text-sm text-gray-500 mb-2">
+                    <i class="fa fa-calendar-o mr-1"></i> 2023-09-25 14:00
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    <i class="fa fa-clock-o mr-1"></i> 持续 2 小时
+                  </div>
+                </div>
+                
+                <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                  <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-medium">动态规划专题赛</h4>
+                    <span class="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">专题</span>
+                  </div>
+                  <div class="text-sm text-gray-500 mb-2">
+                    <i class="fa fa-calendar-o mr-1"></i> 2023-09-30 10:00
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    <i class="fa fa-clock-o mr-1"></i> 持续 4 小时
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 编程语言分布 -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="font-bold text-lg mb-4">用户编程语言偏好</h3>
+              <div class="h-64">
+                <canvas id="languageChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 功能介绍 -->
+    <section class="bg-gray-50 py-12">
+      <div class="container mx-auto px-4">
+        <h2 class="text-2xl md:text-3xl font-bold text-center mb-10">为什么选择 CodeJudge？</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <i class="fa fa-database text-primary text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">丰富的题库</h3>
+            <p class="text-gray-600">超过1000道精心设计的编程题目，涵盖从入门到高级的各个难度级别，满足不同阶段学习者的需求。</p>
+          </div>
+          
+          <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <i class="fa fa-trophy text-primary text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">定期比赛</h3>
+            <p class="text-gray-600">每周举办各类编程比赛，模拟真实竞赛环境，提升你的实战能力，与其他编程爱好者一较高下。</p>
+          </div>
+          
+          <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <i class="fa fa-users text-primary text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">活跃社区</h3>
+            <p class="text-gray-600">加入我们的编程社区，与志同道合的开发者交流学习经验，分享解题思路，共同成长进步。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-dark text-gray-400 py-10">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="text-white text-2xl">
+              <i class="fa fa-code-fork"></i>
+            </div>
+            <span class="text-xl font-bold text-white">CodeJudge</span>
+          </div>
+          <p class="mb-4">专业的在线程序评测系统，助力编程爱好者提升技能，挑战自我。</p>
+          <div class="flex space-x-4">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <i class="fa fa-github text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <i class="fa fa-twitter text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <i class="fa fa-weixin text-xl"></i>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <i class="fa fa-weibo text-xl"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="text-white font-bold mb-4">快速链接</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="hover:text-white transition-colors">首页</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">题库</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">比赛</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">排行榜</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">讨论区</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-white font-bold mb-4">资源中心</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="hover:text-white transition-colors">帮助文档</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">教程文章</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">常见问题</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">评测规则</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">API 文档</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-white font-bold mb-4">联系我们</h4>
+          <ul class="space-y-2">
+            <li class="flex items-center">
+              <i class="fa fa-envelope-o mr-2"></i>
+              <a href="mailto:contact@codejudge.com" class="hover:text-white transition-colors">contact@codejudge.com</a>
+            </li>
+            <li class="flex items-center">
+              <i class="fa fa-map-marker mr-2"></i>
+              <span>北京市海淀区科技园</span>
+            </li>
+            <li class="flex items-center">
+              <i class="fa fa-phone mr-2"></i>
+              <span>400-123-4567</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700 pt-6 text-center text-sm">
+        <p>&copy; 2023 CodeJudge 在线评测系统. 保留所有权利.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // 移动端菜单切换
+    document.getElementById('mobile-menu-button').addEventListener('click', function() {
+      const mobileMenu = document.getElementById('mobile-menu');
+      mobileMenu.classList.toggle('hidden');
+    });
+    
+    // 导航栏滚动效果
+    window.addEventListener('scroll', function() {
+      const header = document.querySelector('header');
+      if (window.scrollY > 10) {
+        header.classList.add('shadow');
+        header.classList.remove('shadow-sm');
+      } else {
+        header.classList.remove('shadow');
+        header.classList.add('shadow-sm');
+      }
+    });
+    
+    // 编程语言分布图表
+    const ctx = document.getElementById('languageChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['C++', 'Python', 'Java', 'JavaScript', '其他'],
+        datasets: [{
+          data: [45, 25, 15, 10, 5],
+          backgroundColor: [
+            '#1E50BC', // primary
+            '#10B981', // success
+            '#F59E0B', // accent
+            '#EF4444', // danger
+            '#9CA3AF'  // gray
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 20,
+              boxWidth: 12
+            }
+          }
+        },
+        cutout: '70%'
+      }
+    });
+    
+    // 数字增长动画效果
+    function animateValue(id, start, end, duration) {
+      const obj = document.getElementById(id);
+      if (!obj) return;
+      
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        
+        // 格式化数字，添加千位分隔符
+        const value = Math.floor(progress * (end - start) + start);
+        obj.innerText = value.toLocaleString();
+        
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+    
+    // 当元素进入视口时触发动画
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (entry.target.id === 'problem-count') animateValue('problem-count', 0, 1254, 2000);
+          if (entry.target.id === 'user-count') animateValue('user-count', 0, 28941, 2000);
+          if (entry.target.id === 'submission-count') animateValue('submission-count', 0, 1456892, 2000);
+          if (entry.target.id === 'contest-count') animateValue('contest-count', 0, 156, 2000);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    
+    // 监听统计数字元素
+    document.querySelectorAll('[id$="-count"]').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>
